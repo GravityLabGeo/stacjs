@@ -1,10 +1,10 @@
-<h2>Javascript library for STAC SpatioTemporal Asset Catalog</h2>
+<h2>Javascript library for STAC (SpatioTemporal Asset Catalog)</h2>
 
-Basic javascript library for navigating STAC static catalogs. 
+This is a basic javascript library for navigating STAC static catalogs, coupled with a basic navigaton web app for exploring static catalogs.
 
 <strong>Warning: </strong>This is very much a work in progress implementing against a schema specification that is also a work in progress. 
 
-The stac.js library contains a data model representing the STAC static schema. 
+This stac.js library contains a data model representing the STAC static schema.
 
 The stacb.html is an "application" that uses stac.js to browse a catalog.
 
