@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>STAC Browser Test</title>
+
+    <script type='text/javascript' src="stac.js"></script>
+    <script type='text/javascript' src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+    <style>
+        th {text-align: left}
+    </style>
+</head>
+<body>
+
+
+    <div>
+        <label>URL to root:
+        <input id="rooturl" type="text"
+                size="90"/>
+            </label>
+        <button onclick="loadIndex()">Load</button>
+    </div>
+
+    <div>
+        <p>https://s3-us-west-2.amazonaws.com/us-gravitylab-devel/stac/catalog-json-root.txt</p>
+        <p>https://storage.googleapis.com/pdd-stac/disasters/catalog.json</p>
+    </div>
+
+    <div id="messages">
+    </div>
+
+    <div id="base_table_div">
+        <table id="base_table">
+        </table>
+    </div>
+
+    <div id="parent_link" style="margin: 2em"></div>
+
+    <h3>Items</h3>
+    <div id="current_items"></div>
+
+    <h3>Links</h3>
+    <div id="current_links"></div>
+
+    <h3>Alternates</h3>
+    <div id="alternate_links"></div>
+
+    <h3>Unknowns</h3>
+    <div id="unknown_links"></div>
+
+    <pre id="dump">
+    </pre>
+
+
+<script>
+
+    var idx = null;
+    var parentNode = null;
+    var currentNode = null;
+
+//https://storage.googleapis.com/pdd-stac/disasters/catalog.json
+//https://s3-us-west-2.amazonaws.com/radiant-nasa-iserv/iserv.json
+
+    var defaultroot = "https://storage.googleapis.com/pdd-stac/disasters/catalog.json";
+    $('#rooturl').val(defaultroot);
+
+    function clearMessages(){
+        $('#messages').empty();
+    }
+
+    function appendMessage(msg){
+        $('#messages').append(msg).append('<br />');
+    }
+
+    function dumpObject(obj){
+        $('#dump').empty();
+        var json = JSON.stringify(obj, undefined, 2);
+        $('#dump').append(json);
+    }
+
+    function loadIndex(){
+        var rooturl = $('#rooturl').val();
+        idx = new Index();
+        idx.initialize(rooturl);
+        populateRootCatalogHtml(idx.getRootNode());
+        populateLinkHtml(idx.getRootNode());
+        currentNode = idx.getRootNode();
+        parentNode = null;
+        setParentLink(null);
+    }
+
+    function goTo(href){
+        var link = currentNode.getEntry().findLink(href);
+        var node = currentNode.fetchChildNode(link);
+        populateLinkHtml(node);
+        parentNode = currentNode;
+        currentNode = node;
+        setParentLink(parentNode);
+        return false;
+    }
+
+    function goToParent(href){
+        //we already have the parent so just walk back
+        populateLinkHtml(parentNode);
+        currentNode = parentNode;
+        parentNode = currentNode.parentNode; //set from the parentNode property of this node
+        return false;
+    }
+
+    function goToItem(href){
+    }
+
+    function populateRootCatalogHtml(node){
+        var entry = node.getEntry();
+        $('#base_table').empty();
+        $('#base_table').append( '<tr><th>Name</th><td>' + entry.name + '</td></tr>' );
+        $('#base_table').append( '<tr><th>Description</th><td>' + entry.description + '</td></tr>' );
+        $('#base_table').append( '<tr><th>License</th><td>' + entry.license.name + '</td></tr>' );
+    }
+
+    function setParentLink(node){
+        $('#parent_link').empty();
+        if (null == node) {
+            $('#parent_link').append("This is the Root Catalog");
+        } else {
+            var vr = "'" + node.url + "'";
+            $('#current_items').append(  '<a onclick="event.preventDefault(); goToParent('+ vr +')" href="">^ parent ^ </a>');
+        }
+    }
+
+    function populateLinkHtml(node){
+
+        var entry = node.getEntry();
+        var currentroot = node.computeUrlBase();
+
+        $('#current_links').empty();
+        $('#current_items').empty();
+        $('#alternate_links').empty();
+        $('#unknown_links').empty();
+
+        $.each(entry.links, function(idx, value){
+
+            var lnk = currentroot + value.href;
+            var vr = "'" + value.href + "'";
+
+            if ('self' == value.rel) {
+                //ignore
+
+            } else if ('parent' == value.rel) {
+                //ignore
+
+            } else if ('item' == value.rel) {
+                $('#current_items').append(  '<a onclick="event.preventDefault(); goTo('+ vr +')" href="' + value.href + '">'+ lnk +'</a>'  ).append('<p>');
+
+            } else if ('alternate' == value.rel) {
+                $('#alternate_links').append(  '<a onclick="event.preventDefault(); goTo(' + vr +')" href="' + value.href + '">' + lnk +'</a>'  ).append('<p>');
+
+            } else if ('child' == value.rel) {
+                $('#current_links').append(  '<a onclick="event.preventDefault(); goTo(' + vr +')" href="' + value.href + '">'+ lnk +'</a>'  ).append('<p>');
+
+            } else {
+                $('#unknown_links').append(  '<a onclick="event.preventDefault(); goTo(' + vr +')" href="' + value.href + '">(unknown rel)'+ lnk +'</a>'  ).append('<p>');
+
+            }
+        });
+    }
+
+
+</script>
+</body>
+
+</html>
