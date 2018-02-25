@@ -27,10 +27,8 @@
         }
 
         .infopanel2 {
+            padding: 0.3em;
             box-shadow: inset 0 1px 2px rgba(0,0,0,.39), 0 -1px 1px #FFF, 0 1px 0 #FFF;
-            width: 100%;
-            background-color: #EAECEE;
-            padding: 0.3em
         }
 
         .infopanel-scroll{
@@ -94,7 +92,7 @@
                     <pre id="json_code"></pre>
                 </div>
                 <div>
-                    <h3>Links</h3>
+                    <h4>Links</h4>
                     <div id="current_links"></div>
                 </div>
             </div>
@@ -103,6 +101,7 @@
         <div class="column right">
 
             <div class="infopanel2" id="preview_panel">
+                <h4>Preview</h4>
                 <pre id="json_preview"></pre>
             </div>
         </div>
@@ -215,9 +214,6 @@
         var currentroot = node.computeUrlBase();
 
         $('#current_links').empty();
-        $('#current_items').empty();
-        $('#alternate_links').empty();
-        $('#unknown_links').empty();
 
         $.each(entry.links, function(idx, value){
 
@@ -230,6 +226,10 @@
 
             } else if ('parent' == value.rel) {
                 //ignore
+
+            } else if ('alternate' == value.rel) {
+                $('#current_links').append('<span>').append(value.rel).append('<br />');
+                $('#current_links').append('<a href="' + value.href + '" target="_blank">'+ lnk +'</a>'  ).append('<p>');
 
             } else {
                 $('#current_links').append('<span>').append(value.rel).append('<br />');
