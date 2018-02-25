@@ -10,49 +10,103 @@
     <script type='text/javascript' src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 
     <style>
+
+        body {
+            margin: 0;
+            background-color: #EAECEE;
+        }
+
         th {text-align: left}
+
+        .infopanel {
+            box-shadow: inset 0 1px 2px rgba(0,0,0,.39), 0 -1px 1px #FFF, 0 1px 0 #FFF;
+            width: 100%;
+            height: 11em;
+            background-color: #EAECEE;
+            padding: 0.3em
+        }
+
+        .infopanel2 {
+            box-shadow: inset 0 1px 2px rgba(0,0,0,.39), 0 -1px 1px #FFF, 0 1px 0 #FFF;
+            width: 100%;
+            background-color: #EAECEE;
+            padding: 0.3em
+        }
+
+        .infopanel-scroll{
+            height: 5em;
+            overflow: scroll;
+        }
+
+       .column {
+            float: left;
+        }
+
+        .left {
+            width: 65%;
+        }
+
+        .right {
+            width: 35%;
+        }
+
+        /* Clear floats after the columns */
+        .row: after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+
+
     </style>
 </head>
 <body>
 
+    <div class="row">
+        <div class="infopanel" id="navigation_panel">
+            <label>URL to root:
+            <input id="rooturl" type="text"
+                    size="90"/>
+                </label>
+            <button onclick="loadIndex()">Load</button>
 
-    <div>
-        <label>URL to root:
-        <input id="rooturl" type="text"
-                size="90"/>
-            </label>
-        <button onclick="loadIndex()">Load</button>
+            <div id="parent_link" style="margin: 2em; float: right"></div>
+            <div>
+                <p>Sample catalogs:<br/>
+                <span>https://storage.googleapis.com/pdd-stac/disasters/catalog.json</span>
+                </p>
+            </div>
+
+            <div class="infopanel-scroll">
+                <div class="infopanel"  id="root_panel"></div>
+            </div>
+
+        </div>
     </div>
 
-    <div>
-        <p>https://s3-us-west-2.amazonaws.com/us-gravitylab-devel/stac/catalog-json-root.txt</p>
-        <p>https://storage.googleapis.com/pdd-stac/disasters/catalog.json</p>
+    <div class="row">
+        <div class="column left">
+            <div class="infopanel2" id="current_panel">
+                <div>
+                    <div id="current_info"></div>
+                </div>
+                <div style="display: none">
+                    <pre id="json_code"></pre>
+                </div>
+                <div>
+                    <h3>Links</h3>
+                    <div id="current_links"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="column right">
+
+            <div class="infopanel2" id="preview_panel">
+                <pre id="json_preview"></pre>
+            </div>
+        </div>
     </div>
-
-    <div id="messages">
-    </div>
-
-    <div id="base_table_div">
-        <table id="base_table">
-        </table>
-    </div>
-
-    <div id="parent_link" style="margin: 2em"></div>
-
-    <h3>Items</h3>
-    <div id="current_items"></div>
-
-    <h3>Links</h3>
-    <div id="current_links"></div>
-
-    <h3>Alternates</h3>
-    <div id="alternate_links"></div>
-
-    <h3>Unknowns</h3>
-    <div id="unknown_links"></div>
-
-    <pre id="dump">
-    </pre>
 
 
 <script>
@@ -86,49 +140,73 @@
         idx = new Index();
         idx.initialize(rooturl);
         populateRootCatalogHtml(idx.getRootNode());
+        populateCurrentInfoHtml(idx.getRootNode())
         populateLinkHtml(idx.getRootNode());
         currentNode = idx.getRootNode();
         parentNode = null;
         setParentLink(null);
     }
 
-    function goTo(href){
+    function goTo(rel, href){
         var link = currentNode.getEntry().findLink(href);
         var node = currentNode.fetchChildNode(link);
-        populateLinkHtml(node);
-        parentNode = currentNode;
-        currentNode = node;
-        setParentLink(parentNode);
+        if ('item' == rel){
+            displayPreview(node);
+        } else {
+            clearPreview();
+            populateCurrentInfoHtml(node);
+            populateLinkHtml(node);
+            parentNode = currentNode;
+            currentNode = node;
+            setParentLink(parentNode);
+        }
         return false;
+    }
+
+    function displayPreview(node){
+        var pretty = JSON.stringify(node.getEntry(), undefined, 2);
+        $('#json_preview').empty();
+        $('#json_preview').append(pretty);
+    }
+
+    function clearPreview(){
+        $('#json_preview').empty();
     }
 
     function goToParent(href){
         //we already have the parent so just walk back
+        clearPreview();
+        populateCurrentInfoHtml(parentNode);
         populateLinkHtml(parentNode);
         currentNode = parentNode;
         parentNode = currentNode.parentNode; //set from the parentNode property of this node
+        setParentLink(parentNode);
         return false;
-    }
-
-    function goToItem(href){
     }
 
     function populateRootCatalogHtml(node){
         var entry = node.getEntry();
-        $('#base_table').empty();
-        $('#base_table').append( '<tr><th>Name</th><td>' + entry.name + '</td></tr>' );
-        $('#base_table').append( '<tr><th>Description</th><td>' + entry.description + '</td></tr>' );
-        $('#base_table').append( '<tr><th>License</th><td>' + entry.license.name + '</td></tr>' );
+        $('#root_panel').empty();
+        $('#root_panel').append('<div>').append('<strong>License:</strong> ' +entry.license.name );
+        $('#root_panel').append('<div>').append('<strong>Contact:</strong> ' +entry.contact.name );
+        $('#root_panel').append('<div>').append('<a href="' + entry.homepage + '" target=_blank >homepage</a>');
     }
 
     function setParentLink(node){
         $('#parent_link').empty();
         if (null == node) {
-            $('#parent_link').append("This is the Root Catalog");
+            $('#parent_link').append("[Root Catalog]");
         } else {
             var vr = "'" + node.url + "'";
-            $('#current_items').append(  '<a onclick="event.preventDefault(); goToParent('+ vr +')" href="">^ parent ^ </a>');
+            $('#parent_link').append(  '<a onclick="event.preventDefault(); goToParent('+ vr +')" href="">[parent] </a>');
         }
+    }
+
+    function populateCurrentInfoHtml(node){
+        var entry = node.getEntry();
+        $('#current_info').empty();
+        $('#current_info').append('<div>').append('<strong>Name:</strong> ' + entry.name);
+        $('#current_info').append('<div>').append(entry.description);
     }
 
     function populateLinkHtml(node){
@@ -145,6 +223,7 @@
 
             var lnk = currentroot + value.href;
             var vr = "'" + value.href + "'";
+            var vrel = "'" + value.rel + "'";
 
             if ('self' == value.rel) {
                 //ignore
@@ -152,22 +231,12 @@
             } else if ('parent' == value.rel) {
                 //ignore
 
-            } else if ('item' == value.rel) {
-                $('#current_items').append(  '<a onclick="event.preventDefault(); goTo('+ vr +')" href="' + value.href + '">'+ lnk +'</a>'  ).append('<p>');
-
-            } else if ('alternate' == value.rel) {
-                $('#alternate_links').append(  '<a onclick="event.preventDefault(); goTo(' + vr +')" href="' + value.href + '">' + lnk +'</a>'  ).append('<p>');
-
-            } else if ('child' == value.rel) {
-                $('#current_links').append(  '<a onclick="event.preventDefault(); goTo(' + vr +')" href="' + value.href + '">'+ lnk +'</a>'  ).append('<p>');
-
             } else {
-                $('#unknown_links').append(  '<a onclick="event.preventDefault(); goTo(' + vr +')" href="' + value.href + '">(unknown rel)'+ lnk +'</a>'  ).append('<p>');
-
+                $('#current_links').append('<span>').append(value.rel).append('<br />');
+                $('#current_links').append(  '<a onclick="event.preventDefault(); goTo(' +vrel+ ', '+ vr +')" href="' + value.href + '">'+ lnk +'</a>'  ).append('<p>');
             }
         });
     }
-
 
 </script>
 </body>
