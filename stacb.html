@@ -21,10 +21,8 @@
             background-color: #EAECEE;
         }
 
-        th {text-align: left}
-
         .map {
-            height: 250px;
+            height: 200px;
             width: 100%;
         }
 
@@ -34,21 +32,14 @@
 
         .infopanel {
             box-shadow: inset 0 1px 2px rgba(0,0,0,.39), 0 -1px 1px #FFF, 0 1px 0 #FFF;
-            width: 100%;
-            height: 11em;
             background-color: #EAECEE;
-            padding: 0.3em
+            padding: 0.4em;
         }
 
-        .infopanel2 {
-            padding: 0.3em;
+        .infopanel-scroll {
             box-shadow: inset 0 1px 2px rgba(0,0,0,.39), 0 -1px 1px #FFF, 0 1px 0 #FFF;
-            overflow: scroll;
-        }
-
-        .infopanel-scroll{
-            height: 5em;
-            overflow: scroll;
+            overflow-y: auto;
+            padding: 0.4em;
         }
 
        .column {
@@ -70,64 +61,72 @@
             clear: both;
         }
 
+        pre {
+            white-space: pre-wrap;       /* css-3 */
+            white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+            white-space: -pre-wrap;      /* Opera 4-6 */
+            white-space: -o-pre-wrap;    /* Opera 7 */
+            word-wrap: break-word;       /* Internet Explorer 5.5+ */
+        }
 
     </style>
 </head>
 <body>
 
-    <div class="row">
-        <div class="infopanel" id="navigation_panel">
-            <label>URL to root:
-            <input id="rooturl" type="text"
-                    size="90"/>
-                </label>
-            <button onclick="loadIndex()">Load</button>
 
-            <div id="parent_link" style="margin: 2em; float: right"></div>
-            <div>
-                <p>Sample catalogs:<br/>
-                <span>https://storage.googleapis.com/pdd-stac/disasters/catalog.json</span>
-                </p>
-            </div>
-
-            <div class="infopanel-scroll">
-                <div class="infopanel"  id="root_panel"></div>
-            </div>
-
-        </div>
-    </div>
 
     <div class="row">
-        <div class="column left">
-            <div class="infopanel2" id="current_panel">
+
+        <div class="column left" >
+
+            <div id="navigation_panel">
+
+                <div class="infopanel">
+                    <div>Specify a URL to a STAC root catalog json file.</div>
+                    <input id="rooturl" type="text"
+                        size="90"/>
+                    <button onclick="loadIndex()">Load</button>
+                </div>
+
+                <div class="infopanel-scroll">
+                    <div id="root_panel"></div>
+                </div>
+            </div>
+
+            <div class="infopanel-scroll" id="current_panel">
+                <div id="parent_link" style="margin: .2em; float: right"></div>
                 <div>
                     <div id="current_info"></div>
                 </div>
-                <div style="display: none">
-                    <pre id="json_code"></pre>
+                <div>
+                    <button id="current_source_btn" onclick="toggleCurrentSource()">Show Source</button>
+
+
+                    <pre id="current_source" style="display: none">
+                    </pre>
                 </div>
                 <div>
                     <h4>Links</h4>
                     <div id="current_links"></div>
+                    <div id="alternate_links"></div>
                 </div>
             </div>
         </div>
 
         <div class="column right">
 
+            <div id="map" class="map"></div>
+
+            <div id="msg_panel" style="color: red">
+            </div>
+
             <div id="thumbnail">
                 <img id="thumbnail_img" class="thumb" src=""/>
             </div>
 
-            <div id="map" class="map"></div>
 
-            <div class="infopanel2" id="msg_panel">
-            </div>
-
-            <div class="infopanel2" id="preview_panel">
-                <h4>Source</h4>
+            <div id="preview_panel">
                 <pre id="json_preview"></pre>
-
             </div>
         </div>
     </div>
@@ -242,6 +241,25 @@
         $('#msg_panel').append(msg).append('<br />');
     }
 
+    function toggleCurrentSource(){
+        if ('none' == $('#current_source').css('display')){
+            $('#current_source').css('display', 'block');
+            var json = JSON.stringify(currentNode.getEntry(), undefined, 2);
+            $('#current_source').html(json);
+            $('#current_source_btn').html('Hide Source');
+        } else {
+            $('#current_source').css('display', 'none');
+            $('#current_source_btn').html('Show Source');
+        }
+    }
+
+    function clearSource(){
+        $('#current_source_btn').html('Show Source');
+        $('#current_source').css('display', 'none');
+        $('#current_source').empty();
+    }
+
+
     function loadIndex(){
         var rooturl = $('#rooturl').val();
         idx = new Index();
@@ -284,6 +302,7 @@
 
     function resetPreview(){
         clearMessages();
+        clearSource();
         $('#json_preview').empty(); //empty the source
         map.getView().setCenter(ol.proj.fromLonLat([-20, 30])); //reset default map center
         map.getView().setZoom(1);
@@ -333,6 +352,7 @@
         var entry = node.getEntry();
         $('#root_panel').empty();
         $('#root_panel').append('<div>').append('<strong>License:</strong> ' +entry.license.name );
+        $('#root_panel').append('<div>').append('<strong>Copyright:</strong> ' +entry.license.copyright );
         $('#root_panel').append('<div>').append('<strong>Contact:</strong> ' +entry.contact.name );
         $('#root_panel').append('<div>').append('<a href="' + entry.homepage + '" target=_blank >homepage</a>');
     }
@@ -343,7 +363,7 @@
             $('#parent_link').append("[Root Catalog]");
         } else {
             var vr = "'" + node.url + "'";
-            $('#parent_link').append(  '<a onclick="event.preventDefault(); goToParent('+ vr +')" href="">[parent] </a>');
+            $('#parent_link').append(  '&uarr; <a onclick="event.preventDefault(); goToParent('+ vr +')" href="">[parent] </a>');
         }
     }
 
@@ -374,8 +394,8 @@
                 //ignore
 
             } else if ('alternate' == value.rel) {
-                $('#current_links').append('<span>').append(value.rel).append('<br />');
-                $('#current_links').append('<a href="' + value.href + '" target="_blank">'+ lnk +'</a>'  ).append('<p>');
+                $('#alternate_links').append('<span>').append(value.rel).append('<br />');
+                $('#alternate_links').append('<a href="' + value.href + '" target="_blank">'+ lnk +'</a>'  ).append('<p>');
 
             } else {
                 $('#current_links').append('<span>').append(value.rel).append('<br />');
