@@ -214,7 +214,13 @@
 
     function goTo(rel, href){
         var link = currentNode.getEntry().findLink(href);
-        var node = currentNode.fetchChildNode(link);
+        try {
+            var node = currentNode.fetchChildNode(link);
+        } catch(e) {
+            $('#json_preview').append(e.message);
+            return;
+        }
+
         if ('item' == rel){
             displayPreview(node);
         } else {
@@ -259,7 +265,6 @@
 
             $('#thumbnail_img').attr('src', thumbnail_href );
         }
-
     }
 
     function goToParent(href){

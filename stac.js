@@ -31,7 +31,10 @@ function Node(url, rootNode, parentNode, entry) {
 
         var fullUrl = this.computeUrlBase() + link.href;
 
-        var jqxhr = $.ajax({
+        var rtnstatus;
+        var rtnexception;
+
+        $.ajax({
                 url: fullUrl,
                 type: 'GET',
                 crossDomain: true,
@@ -41,10 +44,15 @@ function Node(url, rootNode, parentNode, entry) {
                     var obj = JSON.parse(data);
                     dataObj.fromJson(obj);
                 },
-                fail: function(xhr, status, exception){
-                    appendError(status + ' ' + exception);
+                error: function(xhr, status, exception){
+                    rtnstatus = status;
+                    rtnexception = exception;
                 }
             });
+
+        if (null != rtnstatus || null != rtnexception){
+            throw "Unable to read node: " + status + ' ' + exception;
+        }
 
         var node = new Node(fullUrl, this.rootNode, this, dataObj);
         node.entry = dataObj;
@@ -55,7 +63,6 @@ function Node(url, rootNode, parentNode, entry) {
 
 function Index() {
 
-    this.errors = [];
     this.rootNode = null;
 
     this.getRootNode = function(){
@@ -68,7 +75,10 @@ function Index() {
         var rcurl = rootCatalogUrl;
         var rootNode = null;
 
-        var jqxhr = $.ajax({
+        var rtnstatus;
+        var rtnexception;
+
+        $.ajax({
                 url: rcurl,
                 type: 'GET',
                 crossDomain: true,
@@ -80,19 +90,18 @@ function Index() {
                     rc.fromJson(obj);
                     rootNode = new Node(rcurl, null, null, rc);
                 },
-                fail: function(xhr, status, exception){
-                    appendError(status + ' ' + exception);
+                error: function(xhr, status, exception){
+                    rtnstatus = status;
+                    rtnexception = exception;
                 }
             });
 
+        if (null != rtnstatus || null != rtnexception){
+            throw "Unable to read catalog: " + status + ' ' + exception;
+        }
 
         this.rootNode = rootNode;
     }
-
-    this.appendError = function(msg){
-        this.errors.push(msg);
-    }
-
 };
 
 
