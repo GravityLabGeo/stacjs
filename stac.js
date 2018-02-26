@@ -301,7 +301,7 @@ function Item(){
         }
         if ("geometry" in json){
             this.geometry = new Geometry();
-            this.geometry.fromJson(json);
+            this.geometry.fromJson(json.geometry);
         }
         if ("properties" in json){
             this.properties = json.properties;
