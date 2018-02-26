@@ -9,6 +9,9 @@
     <script type='text/javascript' src="stac.js"></script>
     <script type='text/javascript' src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 
+    <link rel="stylesheet" href="https://openlayers.org/en/v4.6.4/css/ol.css" type="text/css">
+    <script src="https://openlayers.org/en/v4.6.4/build/ol.js" type="text/javascript"></script>
+
     <style>
 
         body {
@@ -17,6 +20,15 @@
         }
 
         th {text-align: left}
+
+        .map {
+            height: 250px;
+            width: 100%;
+        }
+
+        .thumb {
+            height: 400px;
+        }
 
         .infopanel {
             box-shadow: inset 0 1px 2px rgba(0,0,0,.39), 0 -1px 1px #FFF, 0 1px 0 #FFF;
@@ -100,9 +112,16 @@
 
         <div class="column right">
 
+            <div id="thumbnail">
+                <img id="thumbnail_img" class="thumb" src=""/>
+            </div>
+
+            <div id="map" class="map"></div>
+
             <div class="infopanel2" id="preview_panel">
-                <h4>Preview</h4>
+                <h4>Source</h4>
                 <pre id="json_preview"></pre>
+
             </div>
         </div>
     </div>
@@ -114,8 +133,55 @@
     var parentNode = null;
     var currentNode = null;
 
-//https://storage.googleapis.com/pdd-stac/disasters/catalog.json
-//https://s3-us-west-2.amazonaws.com/radiant-nasa-iserv/iserv.json
+    var map;
+    var basemap;
+    var bboxlayer;
+    var bboxSource = new ol.source.Vector({});
+
+    initMap();
+
+    var styles = [
+        new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: 'blue',
+            width: 3
+          }),
+          fill: new ol.style.Fill({
+            color: 'rgba(0, 0, 255, 0.1)'
+          })
+        })
+    ];
+
+    function initMap(){
+
+        basemap = new ol.layer.Tile({
+            source: new ol.source.OSM()
+          });
+
+        bboxlayer = new ol.layer.Vector({
+            source: bboxSource,
+            styles
+          });
+
+        map = new ol.Map({
+            target: 'map',
+            layers: [basemap, bboxlayer],
+            view: new ol.View({
+              center: ol.proj.fromLonLat([-20, 30]),
+              zoom: 1
+            })
+        });
+    }
+
+   function setBBox(bbox){
+        bboxSource.clear();
+        bbox = ol.proj.transformExtent(bbox, ol.proj.get('EPSG:4326'), ol.proj.get('EPSG:3857'));
+        var p = ol.geom.Polygon.fromExtent(bbox);
+        var polygonFeature = new ol.Feature({ geometry : p });
+        bboxSource.addFeature(polygonFeature);
+        var extent = bboxSource.getExtent();
+        map.getView().fit(extent);
+    }
 
     var defaultroot = "https://storage.googleapis.com/pdd-stac/disasters/catalog.json";
     $('#rooturl').val(defaultroot);
@@ -152,7 +218,7 @@
         if ('item' == rel){
             displayPreview(node);
         } else {
-            clearPreview();
+            resetPreview();
             populateCurrentInfoHtml(node);
             populateLinkHtml(node);
             parentNode = currentNode;
@@ -162,19 +228,43 @@
         return false;
     }
 
+    function resetPreview(){
+        $('#json_preview').empty(); //empty the source
+        map.getView().setCenter(ol.proj.fromLonLat([-20, 30])); //reset default map center
+        map.getView().setZoom(1);
+        $('#thumbnail_img').attr('src', '' ); //clear thumbnail
+    }
+
     function displayPreview(node){
+        var item = node.getEntry();
+        setBBox(item.bbox);
+        setThumbnail(item);
         var pretty = JSON.stringify(node.getEntry(), undefined, 2);
         $('#json_preview').empty();
         $('#json_preview').append(pretty);
     }
 
-    function clearPreview(){
-        $('#json_preview').empty();
+    function setThumbnail(item){
+
+        var thumbnail_href = null;
+        $.each(item.links, function(idx, link){
+
+           if ( 'thumbnail' == link.rel ){
+                thumbnail_href = link.href;
+                return false;
+           }
+        });
+
+        if (null != thumbnail_href) {
+
+            $('#thumbnail_img').attr('src', thumbnail_href );
+        }
+
     }
 
     function goToParent(href){
         //we already have the parent so just walk back
-        clearPreview();
+        resetPreview();
         populateCurrentInfoHtml(parentNode);
         populateLinkHtml(parentNode);
         currentNode = parentNode;
