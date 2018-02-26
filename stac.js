@@ -47,6 +47,7 @@ function Node(url, rootNode, parentNode, entry) {
                 error: function(xhr, status, exception){
                     rtnstatus = status;
                     rtnexception = exception;
+                    return false;
                 }
             });
 
@@ -93,6 +94,7 @@ function Index() {
                 error: function(xhr, status, exception){
                     rtnstatus = status;
                     rtnexception = exception;
+                    return false;
                 }
             });
 

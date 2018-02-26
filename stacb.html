@@ -186,14 +186,6 @@
     var defaultroot = "https://storage.googleapis.com/pdd-stac/disasters/catalog.json";
     $('#rooturl').val(defaultroot);
 
-    function clearMessages(){
-        $('#messages').empty();
-    }
-
-    function appendMessage(msg){
-        $('#messages').append(msg).append('<br />');
-    }
-
     function dumpObject(obj){
         $('#dump').empty();
         var json = JSON.stringify(obj, undefined, 2);
@@ -217,8 +209,9 @@
         try {
             var node = currentNode.fetchChildNode(link);
         } catch(e) {
-            $('#json_preview').append(e.message);
-            return;
+            var fullUrl = currentNode.computeUrlBase() + link.href;
+            displayPreviewMessage("Error: Unable to read resource at: " + fullUrl);
+            return false;
         }
 
         if ('item' == rel){
@@ -239,6 +232,11 @@
         map.getView().setCenter(ol.proj.fromLonLat([-20, 30])); //reset default map center
         map.getView().setZoom(1);
         $('#thumbnail_img').attr('src', '' ); //clear thumbnail
+    }
+
+    function displayPreviewMessage(msg){
+        resetPreview();
+        $('#json_preview').append(msg).append('<p>');
     }
 
     function displayPreview(node){
