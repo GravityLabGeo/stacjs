@@ -18,7 +18,7 @@ function Node(url, rootNode, parentNode, entry) {
     }
 
     this.computeAbsoluteUrl = function(href){
-        if (href.includes('//')) {
+        if (href.indexOf('//') >= 0) {
             return href; //is already absolute
         } else {
             return this.computeUrlBase() + href; //generate absolute path

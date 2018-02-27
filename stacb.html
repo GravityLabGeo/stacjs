@@ -273,6 +273,7 @@
     }
 
     function goTo(rel, href){
+
         var link = currentNode.getEntry().findLink(href);
         try {
             var node = currentNode.fetchChildNode(link);
@@ -377,15 +378,17 @@
     function populateLinkHtml(node){
 
         var entry = node.getEntry();
-        var currentroot = node.computeUrlBase();
 
         $('#current_links').empty();
 
         $.each(entry.links, function(idx, value){
 
-            var lnk = currentroot + value.href;
-            var vr = "'" + value.href + "'";
-            var vrel = "'" + value.rel + "'";
+            var qlnk_orig = "'" + value.href + "'";
+
+            var lnk = node.computeAbsoluteUrl(value.href);
+
+            var qlnk = "'" + lnk + "'";
+            var qrel = "'" + value.rel + "'";
 
             if ('self' == value.rel) {
                 //ignore
@@ -395,11 +398,11 @@
 
             } else if ('alternate' == value.rel) {
                 $('#alternate_links').append('<span>').append(value.rel).append('<br />');
-                $('#alternate_links').append('<a href="' + value.href + '" target="_blank">'+ lnk +'</a>'  ).append('<p>');
+                $('#alternate_links').append('<a href="' + lnk + '" target="_blank">'+ lnk +'</a>'  ).append('<p>');
 
             } else {
                 $('#current_links').append('<span>').append(value.rel).append('<br />');
-                $('#current_links').append(  '<a onclick="event.preventDefault(); goTo(' +vrel+ ', '+ vr +')" href="' + value.href + '">'+ lnk +'</a>'  ).append('<p>');
+                $('#current_links').append('<a onclick="event.preventDefault(); goTo(' + qrel + ', '+ qlnk_orig +')" href="'+lnk+'">'+ lnk +'</a>'  ).append('<p>');
             }
         });
     }
