@@ -17,6 +17,14 @@ function Node(url, rootNode, parentNode, entry) {
         return this.url.replace(r, '');
     }
 
+    this.computeAbsoluteUrl = function(href){
+        if (href.includes('//')) {
+            return href; //is already absolute
+        } else {
+            return this.computeUrlBase() + href; //generate absolute path
+        }
+    }
+
     this.fetchChildNode = function(link) {
 
         var dataObj = null;
@@ -29,7 +37,7 @@ function Node(url, rootNode, parentNode, entry) {
             dataObj = new Catalog();
         }
 
-        var fullUrl = this.computeUrlBase() + link.href;
+        var fullUrl = this.computeAbsoluteUrl(link.href);
 
         var rtnstatus;
         var rtnexception;
@@ -99,7 +107,7 @@ function Index() {
             });
 
         if (null != rtnstatus || null != rtnexception){
-            throw "Unable to read catalog: " + status + ' ' + exception;
+            throw "Unable to read catalog: " + rtnstatus + ' ' + rtnexception;
         }
 
         this.rootNode = rootNode;

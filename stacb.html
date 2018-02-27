@@ -101,9 +101,9 @@
                 <div>
                     <button id="current_source_btn" onclick="toggleCurrentSource()">Show Source</button>
 
-
                     <pre id="current_source" style="display: none">
                     </pre>
+
                 </div>
                 <div>
                     <h4>Links</h4>
@@ -277,7 +277,7 @@
         try {
             var node = currentNode.fetchChildNode(link);
         } catch(e) {
-            var fullUrl = currentNode.computeUrlBase() + link.href;
+            var fullUrl = currentNode.computeAbsoluteUrl(link.href);
             reportReadError("Error: Unable to read resource at: " + fullUrl);
             return false;
         }
