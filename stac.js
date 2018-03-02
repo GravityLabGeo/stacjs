@@ -1,4 +1,4 @@
-
+/* Copyright 2018 GravityLab LLC, David Hemphill */
 
 function Node(url, rootNode, parentNode, entry) {
 
